@@ -1,0 +1,432 @@
+{
+  "name": "WF_GitHub_Telegram_Test",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "=github/push-event",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "8a881cdb-436d-4f86-a0db-3fafe9bcb390",
+      "name": "GitHub Push Webhook",
+      "webhookId": "41e7971a-133f-4c76-a70c-cd710a4e13ea",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "JHLYvMokTUZH3y3T",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"repo_name\": \"{{$json.body.repository.name}}\",\n  \"pusher\": \"{{$json.body.pusher.name}}\",\n  \"branch\": \"{{$json.body.ref}}\",\n  \"commit_message\": \"{{$json.body.head_commit.message}}\",\n  \"commit_id\": \"{{$json.body.head_commit.id}}\",\n  \"changed_files\": {{$json.body.head_commit.modified}},\n  \"added_files\": {{$json.body.head_commit.added}},\n  \"removed_files\": {{$json.body.head_commit.removed}}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "101af2b0-c93b-483b-a694-7b8a6b98a7a2",
+      "name": "Extract Repository Data"
+    },
+    {
+      "parameters": {
+        "chatId": "8616981101",
+        "text": "=🚀 AI Commit Generated\n\nRepository:\n{{ $('Extract Repository Data').item.json.repo_name }}\n\nBranch:\n{{ $('Extract Repository Data').item.json.branch }}\n\nGenerated Commit:\n{{ $json.commit_message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1664,
+        0
+      ],
+      "id": "02f29c99-501a-43e3-9e9c-7e66e7c8f364",
+      "name": "Send a text message",
+      "webhookId": "b133578a-2113-4c2b-8f63-39f75fb31e25",
+      "credentials": {
+        "telegramApi": {
+          "id": "OapTC5WXiwoAyk4g",
+          "name": "CRED_Telegram_Bot_Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "body": "={{ JSON.stringify({\n  \"model\": \"llama-3.1-8b-instant\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": $json.ai_prompt\n    }\n  ],\n  \"temperature\": 0.2,\n  \"max_tokens\": 60\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "acc393a1-d47a-4046-b26a-a9afd8022f88",
+      "name": "Call Groq API",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "JHLYvMokTUZH3y3T",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9bc0172e-9602-4b57-9f3c-640c92e460b1",
+              "name": "ai_prompt",
+              "value": "=Generate a professional conventional commit message.\n\nRepository:\n{{$json.repo_name}}\n\nBranch:\n{{$json.branch}}\n\nChanged Files:\n{{$json.changed_files}}\n\nAdded Files:\n{{$json.added_files}}\n\nRemoved Files:\n{{$json.removed_files}}\n\nOriginal Commit:\n{{$json.commit_message}}\n\nRules:\n- Use conventional commits\n- Under 72 characters\n- Professional\n- Output only commit message",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "b445446b-eb14-462e-86a7-38a1979a34cb",
+      "name": "ai_prompt"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ef1b02c9-f1b5-458d-91f2-cadc2db65054",
+              "name": "=commit_message",
+              "value": "={{$json.choices[0].message.content}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "8b03350c-1bd7-4768-9e35-a1c6d24d6c94",
+      "name": "Extract AI Commit Message"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "532ba12a-7c4b-4d29-990b-79d909926579",
+              "leftValue": "={{$json.choices[0].message.content}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        832,
+        0
+      ],
+      "id": "610a3c07-2718-4e07-b2c4-4b811263bad4",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "8616981101",
+        "text": "❌ Groq API Failed  Workflow: WF_GitHub_Telegram_Test  Check n8n execution logs.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1088,
+        144
+      ],
+      "id": "cf4df1db-148a-4117-8b9b-72eb157723f6",
+      "name": "Send a text message1",
+      "webhookId": "86a1416a-a8a4-4c8e-9762-1d80ec10c6aa",
+      "credentials": {
+        "telegramApi": {
+          "id": "OapTC5WXiwoAyk4g",
+          "name": "CRED_Telegram_Bot_Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "efc7cf9d-6fd5-4930-afe6-8e0f266072a2",
+              "name": "timestamp",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "32ae0b7c-58e5-4512-ab7d-bc376ef83e39",
+              "name": "repo",
+              "value": "={{ $('Extract Repository Data').item.json.repo_name }}",
+              "type": "string"
+            },
+            {
+              "id": "a86fa373-7de0-4d73-8ed1-a01b75150f17",
+              "name": "branch",
+              "value": "={{ $('Extract Repository Data').item.json.branch }}",
+              "type": "string"
+            },
+            {
+              "id": "9fd1942c-87b4-4303-95e5-6a8a05659567",
+              "name": "generated_commit",
+              "value": "={{ $json.commit_message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "21f33547-5565-46c5-b5e0-b96cb41521e2",
+      "name": "Prepare Logs"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "11NdS9XliSfwCdngk7s2Et2i6mpXiiUJmC9Kbp7gJkKQ",
+          "mode": "list",
+          "cachedResultName": "AI_Commit_Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/11NdS9XliSfwCdngk7s2Et2i6mpXiiUJmC9Kbp7gJkKQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/11NdS9XliSfwCdngk7s2Et2i6mpXiiUJmC9Kbp7gJkKQ/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "repo",
+              "displayName": "repo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "branch",
+              "displayName": "branch",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_commit",
+              "displayName": "generated_commit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "835a0754-d8a8-4420-9876-330745863fdf",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8mlGeVcSjhPWcO9S",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "GitHub Push Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Repository Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Repository Data": {
+      "main": [
+        [
+          {
+            "node": "ai_prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Groq API": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai_prompt": {
+      "main": [
+        [
+          {
+            "node": "Call Groq API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract AI Commit Message": {
+      "main": [
+        [
+          {
+            "node": "Prepare Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Extract AI Commit Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Logs": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "65f060a7-a4cc-47a9-819a-73b61d6202eb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e9981e4914c73ff165469a1e8feb8c66cd5e6d50c8997a4c2a59c58a65134233"
+  },
+  "id": "fGE9utgUVegr55yf",
+  "tags": []
+}
