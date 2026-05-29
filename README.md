@@ -14,20 +14,6 @@ For details on the design, see [architecture.md](./architecture.md) and [webhook
 
 ---
 
-## Security & Data Privacy
-
-### Is Git Safe?
-Git is a local version control system and **does not** automatically scan, share, or upload your system files or private data. 
-* **Data Scoped to Repository:** Only files inside this specific project directory that you explicitly track (`git add`) are committed.
-* **Sensitive Files Excluded:** Critical environment variables and credentials (such as your `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and `GROQ_API_KEY`) are stored in the local `.env` file, which is listed in `.gitignore` and is never committed or pushed to GitHub.
-* **Git Metadata:** When pushing commits, Git only transmits the repository file modifications, commit messages, and author metadata (your configured name, email, and timestamps).
-
-### Pipeline Security
-* **Signature Verification:** The n8n webhook validates GitHub requests using the `X-Hub-Signature-256` header and a secure webhook secret. This ensures only authenticated payloads from GitHub are processed.
-* **API Key Isolation:** All external integrations (Groq API, Telegram Bot, Google Sheets OAuth) are stored securely in n8n's credential manager or local `.env` variables and are never exposed publicly.
-
----
-
 ## Setup & Configuration
 
 ### Prerequisites
